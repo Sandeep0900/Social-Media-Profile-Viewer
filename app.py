@@ -9,7 +9,7 @@ from datetime import datetime
 # API Configurations
 INSTAGRAM_API_HOST = st.secrets.get("INSTAGRAM_API_HOST", "instagram-scraper-api2.p.rapidapi.com")
 TWITTER_API_HOST = st.secrets.get("TWITTER_API_HOST", "twitter241.p.rapidapi.com")
-RAPIDAPI_KEY = st.secrets.get("RAPIDAPI_KEY", "8001a304a2mshd886dff90a47fbcp1bcf23jsnd645756b535a")
+RAPIDAPI_KEY = st.secrets.get("RAPIDAPI_KEY")
 
 # Instagram Functions
 def fetch_instagram_data(username):
