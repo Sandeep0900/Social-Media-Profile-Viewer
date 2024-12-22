@@ -5,14 +5,10 @@ import pandas as pd
 from datetime import datetime
 
 
-
-# Load environment variables
-load_dotenv()
-
 # API Configurations
-INSTAGRAM_API_HOST = os.getenv('INSTAGRAM_API_HOST', 'instagram-scraper-api2.p.rapidapi.com')
-TWITTER_API_HOST = os.getenv('TWITTER_API_HOST', 'twitter241.p.rapidapi.com')
-RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY')
+INSTAGRAM_API_HOST = st.secrets["INSTAGRAM_API_HOST"]
+TWITTER_API_HOST = st.secrets["TWITTER_API_HOST"]
+RAPIDAPI_KEY = st.secrets["RAPIDAPI_KEY"]
 
 # Instagram Functions
 def fetch_instagram_data(username):
