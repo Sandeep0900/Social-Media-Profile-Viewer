@@ -169,36 +169,45 @@ def get_user_tweets(user_id, count=20):
         "x-rapidapi-host": TWITTER_API_HOST
     }
     params = {"user": user_id, "count": count}
-    
+
     try:
         response = requests.get(url, headers=headers, params=params)
-        return response.json() if response.status_code == 200 else None
+        if response.status_code == 200:
+            return response.json()
+        else:
+            st.warning(f"Failed to fetch tweets. Status code: {response.status_code}")
+            return None
     except Exception as e:
         st.error(f"Error fetching tweets: {str(e)}")
         return None
 
-def parse_tweet(tweet_content):
-    """Parse tweet content"""
+
+def parse_tweet(tweet_entry):
+    """Extract tweet details"""
     try:
-        tweet_data = tweet_content.get('content', {}).get('itemContent', {}).get('tweet_results', {}).get('result', {})
-        if not tweet_data:
+        content = tweet_entry.get('content', {})
+        tweet_results = content.get('itemContent', {}).get('tweet_results', {}).get('result', {})
+
+        if not tweet_results:
             return None
         
-        legacy_data = tweet_data.get('legacy', {})
-        if not legacy_data:
+        legacy = tweet_results.get('legacy', {})
+        if not legacy:
             return None
-            
+
         return {
-            'text': legacy_data.get('full_text', ''),
-            'created_at': legacy_data.get('created_at', ''),
-            'retweet_count': legacy_data.get('retweet_count', 0),
-            'favorite_count': legacy_data.get('favorite_count', 0),
-            'reply_count': legacy_data.get('reply_count', 0),
-            'quote_count': legacy_data.get('quote_count', 0),
-            'media': legacy_data.get('extended_entities', {}).get('media', [])
+            'text': legacy.get('full_text', ''),
+            'created_at': legacy.get('created_at', ''),
+            'retweet_count': legacy.get('retweet_count', 0),
+            'favorite_count': legacy.get('favorite_count', 0),
+            'reply_count': legacy.get('reply_count', 0),
+            'quote_count': legacy.get('quote_count', 0),
+            'media': legacy.get('extended_entities', {}).get('media', [])
         }
     except Exception as e:
+        st.error(f"Error parsing tweet: {str(e)}")
         return None
+
 
 def display_tweet(tweet, is_pinned=False):
     """Display tweet with formatting"""
@@ -209,13 +218,58 @@ def display_tweet(tweet, is_pinned=False):
         st.markdown(f"**{tweet['text']}**")
         st.markdown(f"🔄 {tweet['retweet_count']} | ❤️ {tweet['favorite_count']} | 💬 {tweet['reply_count']} | 🔁 {tweet['quote_count']}")
         st.markdown(f"*Posted on: {tweet['created_at']}*")
-        
+
         if tweet['media']:
             cols = st.columns(min(len(tweet['media']), 2))
             for idx, media in enumerate(tweet['media']):
                 if media.get('type') == 'photo':
                     with cols[idx % 2]:
                         st.image(media.get('media_url_https', ''), width=250)
+
+
+# Inside the Twitter Tab
+if st.button("Fetch Twitter Profile", key="twitter_button"):
+    if twitter_username:
+        with st.spinner('Fetching Twitter data...'):
+            user_data = get_twitter_user_data(twitter_username)
+
+            if user_data:
+                legacy_data = user_data.get('legacy', {})
+
+                col1, col2 = st.columns([1, 2])
+                
+                with col1:
+                    profile_image = legacy_data.get("profile_image_url_https", "").replace("_normal", "")
+                    st.image(profile_image, width=150, caption=f"{legacy_data.get('name')}'s Profile Picture")
+                
+                with col2:
+                    st.header(legacy_data.get('name'))
+                    st.markdown(f"**Description:** {legacy_data.get('description')}")
+                    st.markdown(f"**Followers:** {legacy_data.get('followers_count')} | **Following:** {legacy_data.get('friends_count')} | **Tweets:** {legacy_data.get('statuses_count')}")
+                    st.markdown(f"**Location:** {legacy_data.get('location', 'Not specified')}")
+                    st.markdown(f"**Joined:** {legacy_data.get('created_at')}")
+
+                profile_banner = legacy_data.get("profile_banner_url")
+                if profile_banner:
+                    st.image(profile_banner, width=600, caption="Profile Banner")
+
+                st.header("Recent Tweets")
+                tweets_data = get_user_tweets(user_data.get('rest_id'))
+
+                if tweets_data:
+                    timeline_entries = tweets_data.get('result', {}).get('timeline', {}).get('instructions', [])
+
+                    for instruction in timeline_entries:
+                        if instruction.get('type') == 'TimelinePinEntry':
+                            tweet = parse_tweet(instruction.get('entry', {}))
+                            if tweet:
+                                display_tweet(tweet, is_pinned=True)
+
+                        elif instruction.get('type') == 'TimelineAddEntries':
+                            for entry in instruction.get('entries', []):
+                                tweet = parse_tweet(entry)
+                                if tweet:
+                                    display_tweet(tweet)
 
 def main():
     # Page configuration
