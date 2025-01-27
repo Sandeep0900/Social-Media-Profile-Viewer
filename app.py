@@ -324,4 +324,29 @@ def main():
                             st.markdown(f"**Description:** {legacy_data.get('description')}")
                             st.markdown(f"**Followers:** {legacy_data.get('followers_count')} | **Following:** {legacy_data.get('friends_count')} | **Tweets:** {legacy_data.get('statuses_count')}")
                             st.markdown(f"**Location:** {legacy_data.get('location', 'Not specified')}")
-                            st.markdown(f"**Joined:**
+                            st.markdown(f"**Joined:** {legacy_data.get('created_at')}")
+                        
+                        profile_banner = legacy_data.get("profile_banner_url")
+                        if profile_banner:
+                            st.image(profile_banner, width=600, caption="Profile Banner")
+                        
+                        st.header("Recent Tweets")
+                        tweets_data = get_user_tweets(user_data.get('rest_id'))
+                        
+                        if tweets_data:
+                            timeline_entries = tweets_data.get('result', {}).get('timeline', {}).get('instructions', [])
+                            
+                            for instruction in timeline_entries:
+                                if instruction.get('type') == 'TimelinePinEntry':
+                                    tweet = parse_tweet(instruction.get('entry', {}))
+                                    if tweet:
+                                        display_tweet(tweet, is_pinned=True)
+                                
+                                elif instruction.get('type') == 'TimelineAddEntries':
+                                    for entry in instruction.get('entries', []):
+                                        tweet = parse_tweet(entry)
+                                        if tweet:
+                                            display_tweet(tweet)
+
+if __name__ == "__main__":
+    main()
