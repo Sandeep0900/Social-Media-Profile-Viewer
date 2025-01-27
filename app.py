@@ -4,14 +4,12 @@ import os
 import pandas as pd
 from datetime import datetime
 
-
-# API Configurations
 # API Configurations
 INSTAGRAM_API_HOST = st.secrets.get("INSTAGRAM_API_HOST", "instagram-scraper-api2.p.rapidapi.com")
 TWITTER_API_HOST = st.secrets.get("TWITTER_API_HOST", "twitter241.p.rapidapi.com")
 RAPIDAPI_KEY = st.secrets.get("RAPIDAPI_KEY")
 
-# Instagram Functions
+# [Previous Instagram Functions remain the same]
 def fetch_instagram_data(username):
     """Fetch Instagram data for a given username"""
     headers = {
@@ -181,7 +179,6 @@ def get_user_tweets(user_id, count=20):
         st.error(f"Error fetching tweets: {str(e)}")
         return None
 
-
 def parse_tweet(tweet_entry):
     """Extract tweet details"""
     try:
@@ -208,7 +205,6 @@ def parse_tweet(tweet_entry):
         st.error(f"Error parsing tweet: {str(e)}")
         return None
 
-
 def display_tweet(tweet, is_pinned=False):
     """Display tweet with formatting"""
     with st.container():
@@ -225,51 +221,6 @@ def display_tweet(tweet, is_pinned=False):
                 if media.get('type') == 'photo':
                     with cols[idx % 2]:
                         st.image(media.get('media_url_https', ''), width=250)
-
-
-# Inside the Twitter Tab
-if st.button("Fetch Twitter Profile", key="twitter_button"):
-    if twitter_username:
-        with st.spinner('Fetching Twitter data...'):
-            user_data = get_twitter_user_data(twitter_username)
-
-            if user_data:
-                legacy_data = user_data.get('legacy', {})
-
-                col1, col2 = st.columns([1, 2])
-                
-                with col1:
-                    profile_image = legacy_data.get("profile_image_url_https", "").replace("_normal", "")
-                    st.image(profile_image, width=150, caption=f"{legacy_data.get('name')}'s Profile Picture")
-                
-                with col2:
-                    st.header(legacy_data.get('name'))
-                    st.markdown(f"**Description:** {legacy_data.get('description')}")
-                    st.markdown(f"**Followers:** {legacy_data.get('followers_count')} | **Following:** {legacy_data.get('friends_count')} | **Tweets:** {legacy_data.get('statuses_count')}")
-                    st.markdown(f"**Location:** {legacy_data.get('location', 'Not specified')}")
-                    st.markdown(f"**Joined:** {legacy_data.get('created_at')}")
-
-                profile_banner = legacy_data.get("profile_banner_url")
-                if profile_banner:
-                    st.image(profile_banner, width=600, caption="Profile Banner")
-
-                st.header("Recent Tweets")
-                tweets_data = get_user_tweets(user_data.get('rest_id'))
-
-                if tweets_data:
-                    timeline_entries = tweets_data.get('result', {}).get('timeline', {}).get('instructions', [])
-
-                    for instruction in timeline_entries:
-                        if instruction.get('type') == 'TimelinePinEntry':
-                            tweet = parse_tweet(instruction.get('entry', {}))
-                            if tweet:
-                                display_tweet(tweet, is_pinned=True)
-
-                        elif instruction.get('type') == 'TimelineAddEntries':
-                            for entry in instruction.get('entries', []):
-                                tweet = parse_tweet(entry)
-                                if tweet:
-                                    display_tweet(tweet)
 
 def main():
     # Page configuration
@@ -311,7 +262,6 @@ def main():
                         st.markdown(f"**Posts:** {profile_data.get('media_count')} | **Followers:** {profile_data.get('follower_count')} | **Following:** {profile_data.get('following_count')}")
                         st.markdown(f"**Account Type:** {profile_data.get('account_type')}")
                         
-                        # Display account creation date
                         creation_timestamp = profile_data.get('created_time', '')
                         if creation_timestamp:
                             created_date = datetime.fromtimestamp(int(creation_timestamp)).strftime('%Y-%m-%d')
@@ -331,17 +281,11 @@ def main():
                                 with cols[1]:
                                     if post['caption']:
                                         st.markdown(f"**Caption:** {post['caption']}")
-                                    
                                     st.markdown(f"❤️ {post['likes']} likes | 💬 {post['comments']} comments")
-                                    
                                     if post['location']:
                                         st.markdown(f"📍 {post['location']}")
-                                    
-                                    # Convert timestamp to readable format
                                     timestamp = datetime.fromtimestamp(post['timestamp']).strftime('%Y-%m-%d %H:%M:%S')
                                     st.markdown(f"*Posted on: {timestamp}*")
-                                    
-                                    # Display media type
                                     media_type = "Photo 📷" if post['type'] == 1 else "Video 🎥" if post['type'] == 2 else "Carousel 📑"
                                     st.markdown(f"*Type: {media_type}*")
                     
@@ -356,55 +300,28 @@ def main():
                         ])
                         st.dataframe(followers_df)
 
-  # Twitter Tab
-with tab2:
-    st.header("Twitter Profile Viewer")
-    
-    # Define twitter_username within the correct scope
-    twitter_username = st.text_input("Enter Twitter Username", key="twitter_input")
-    
-    if st.button("Fetch Twitter Profile", key="twitter_button"):
-        if twitter_username:  # Ensure twitter_username is defined before using it
-            with st.spinner('Fetching Twitter data...'):
-                user_data = get_twitter_user_data(twitter_username)
-                
-                if user_data:
-                    legacy_data = user_data.get('legacy', {})
+    # Twitter Tab
+    with tab2:
+        st.header("Twitter Profile Viewer")
+        twitter_username = st.text_input("Enter Twitter Username", key="twitter_input")
+        
+        if st.button("Fetch Twitter Profile", key="twitter_button"):
+            if twitter_username:
+                with st.spinner('Fetching Twitter data...'):
+                    user_data = get_twitter_user_data(twitter_username)
                     
-                    col1, col2 = st.columns([1, 2])
-                    
-                    with col1:
-                        profile_image = legacy_data.get("profile_image_url_https", "").replace("_normal", "")
-                        st.image(profile_image, width=150, caption=f"{legacy_data.get('name')}'s Profile Picture")
-                    
-                    with col2:
-                        st.header(legacy_data.get('name'))
-                        st.markdown(f"**Description:** {legacy_data.get('description')}")
-                        st.markdown(f"**Followers:** {legacy_data.get('followers_count')} | **Following:** {legacy_data.get('friends_count')} | **Tweets:** {legacy_data.get('statuses_count')}")
-                        st.markdown(f"**Location:** {legacy_data.get('location', 'Not specified')}")
-                        st.markdown(f"**Joined:** {legacy_data.get('created_at')}")
-                    
-                    profile_banner = legacy_data.get("profile_banner_url")
-                    if profile_banner:
-                        st.image(profile_banner, width=600, caption="Profile Banner")
-                    
-                    st.header("Recent Tweets")
-                    tweets_data = get_user_tweets(user_data.get('rest_id'))
-                    
-                    if tweets_data:
-                        timeline_entries = tweets_data.get('result', {}).get('timeline', {}).get('instructions', [])
+                    if user_data:
+                        legacy_data = user_data.get('legacy', {})
                         
-                        for instruction in timeline_entries:
-                            if instruction.get('type') == 'TimelinePinEntry':
-                                tweet = parse_tweet(instruction.get('entry', {}))
-                                if tweet:
-                                    display_tweet(tweet, is_pinned=True)
-                            
-                            elif instruction.get('type') == 'TimelineAddEntries':
-                                for entry in instruction.get('entries', []):
-                                    tweet = parse_tweet(entry)
-                                    if tweet:
-                                        display_tweet(tweet)
-
-if __name__ == "__main__":
-    main()
+                        col1, col2 = st.columns([1, 2])
+                        
+                        with col1:
+                            profile_image = legacy_data.get("profile_image_url_https", "").replace("_normal", "")
+                            st.image(profile_image, width=150, caption=f"{legacy_data.get('name')}'s Profile Picture")
+                        
+                        with col2:
+                            st.header(legacy_data.get('name'))
+                            st.markdown(f"**Description:** {legacy_data.get('description')}")
+                            st.markdown(f"**Followers:** {legacy_data.get('followers_count')} | **Following:** {legacy_data.get('friends_count')} | **Tweets:** {legacy_data.get('statuses_count')}")
+                            st.markdown(f"**Location:** {legacy_data.get('location', 'Not specified')}")
+                            st.markdown(f"**Joined:**
